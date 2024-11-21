@@ -2,12 +2,12 @@ from django.db import models
 from django.contrib.auth import get_user_model
 
 from .constants import LENGHT_CHARACTER_FIELDS, LIMIT_OUTPUT_STRING
-from core.models import IsPublishedCreatedAt
+from core.models import IsPublished, CreatedAt
 
 User = get_user_model()
 
 
-class Location(IsPublishedCreatedAt):
+class Location(IsPublished):
     name = models.CharField('Название места',
                             max_length=LENGHT_CHARACTER_FIELDS)
 
@@ -19,7 +19,7 @@ class Location(IsPublishedCreatedAt):
         return self.name[:LIMIT_OUTPUT_STRING]
 
 
-class Category(IsPublishedCreatedAt):
+class Category(IsPublished):
     title = models.CharField('Заголовок', max_length=LENGHT_CHARACTER_FIELDS)
     description = models.TextField('Описание')
     slug = models.SlugField(
@@ -37,7 +37,7 @@ class Category(IsPublishedCreatedAt):
         return self.title[:LIMIT_OUTPUT_STRING]
 
 
-class Post(IsPublishedCreatedAt):
+class Post(IsPublished):
     title = models.CharField('Заголовок', max_length=LENGHT_CHARACTER_FIELDS)
     text = models.TextField('Текст')
     pub_date = models.DateTimeField(
@@ -73,22 +73,18 @@ class Post(IsPublishedCreatedAt):
         verbose_name_plural = 'Публикации'
         ordering = ('-pub_date',)
 
-    @property
-    def comment_count(self):
-        return self.comments.count()
-
     def __str__(self):
         return self.title[:LIMIT_OUTPUT_STRING]
 
 
-class Comment(IsPublishedCreatedAt):
+class Comment(CreatedAt):
     text = models.TextField('Комментарий',
                             max_length=LENGHT_CHARACTER_FIELDS)
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         verbose_name='Автор публикации',
-        related_name='post'
+        related_name='comments'
     )
     post = models.ForeignKey(
         Post,
@@ -100,6 +96,7 @@ class Comment(IsPublishedCreatedAt):
     class Meta:
         verbose_name = 'комментарий'
         verbose_name_plural = 'Комментарии'
+        ordering = ['created_at']
 
     def __str__(self):
-        return self.name[:LIMIT_OUTPUT_STRING]
+        return self.text[:LIMIT_OUTPUT_STRING]

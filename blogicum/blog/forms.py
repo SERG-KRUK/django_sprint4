@@ -1,5 +1,7 @@
 from django import forms
 from django.contrib.auth import get_user_model
+from django.utils import timezone
+
 from .models import Post, Comment
 
 
@@ -8,6 +10,14 @@ class PostForm(forms.ModelForm):
     class Meta:
         model = Post
         exclude = ('author',)
+        widgets = {
+            'text': forms.Textarea(),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super(PostForm, self).__init__(*args, **kwargs)
+        if 'pub_date' in self.fields:
+            self.fields['pub_date'].initial = timezone.now()
 
 
 class UserForm(forms.ModelForm):
