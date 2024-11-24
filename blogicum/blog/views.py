@@ -1,45 +1,26 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.core.paginator import Paginator
+from django.contrib.auth.forms import UserCreationForm
 from django.db.models import Count
-from django.http import Http404
 from django.shortcuts import get_object_or_404, render
-from django.urls import reverse
+from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.views.generic import (
     CreateView, DeleteView, DetailView, ListView, UpdateView
 )
 
-
 from .constants import PAGINATE_COUNT
+from .services import (annotate_posts_with_comment_count,
+                       filter_published_posts, get_paginated_posts)
 from .forms import UserForm, PostForm, CommentForm
-from .models import Category, Post, User, Comment
+from .models import Category, Post, User
 from .mixins import (
     PostMixin, CommentMixin, AuthorRequiredCommentMixin
 )
 
 
-def annotate_posts_with_comment_count(posts_queryset):
-    return posts_queryset.annotate(comment_count=Count('comments'))
-
-
-def filter_published_posts(posts_queryset):
-    return posts_queryset.select_related(
-        'author', 'location', 'category').filter(
-        is_published=True,
-        category__is_published=True,
-        pub_date__lte=timezone.now()
-    ).order_by('-pub_date')
-
-
-def get_paginated_posts(request, posts):
-    paginator = Paginator(posts, PAGINATE_COUNT)
-    page_number = request.GET.get('page')
-    return paginator.get_page(page_number)
-
-
 def profile(request, username):
     profile = get_object_or_404(User, username=username)
-    posts = Post.objects.filter(author=profile).order_by('-pub_date')
+    posts = profile.posts.order_by('-pub_date')
     posts = annotate_posts_with_comment_count(posts)
     if request.user != profile:
         posts = filter_published_posts(posts)
@@ -91,16 +72,14 @@ class CategoryListView(ListView):
     paginate_by = PAGINATE_COUNT
 
     def get_category(self):
-        category_slug = self.kwargs['category_slug']
-        category = get_object_or_404(Category, slug=category_slug)
-        if not category.is_published:
-            raise Http404("Категория не найдена или снята с публикации.")
-        return category
+        return get_object_or_404(Category.objects.filter(
+            is_published=True),
+            slug=self.kwargs['category_slug']
+        )
 
     def get_queryset(self):
-        self.category = self.get_category()
         return Post.objects.filter(
-            category=self.category,
+            category=self.get_category(),
             is_published=True,
             category__is_published=True,
             pub_date__lte=timezone.now()
@@ -136,30 +115,24 @@ class PostDetailView(LoginRequiredMixin, DetailView):
         return context
 
     def get_object(self):
-        """Получаем пост и проверяем авторство пользователя."""
+
         post = get_object_or_404(Post, id=self.kwargs['post_id'])
         if self.request.user != post.author and not post.is_published:
-            raise Http404("Post not found or not accessible.")
+            return get_object_or_404(
+                Post.objects.filter(is_published=True),
+                id=self.kwargs['post_id'])
         return post
 
 
 class CommentDeleteView(AuthorRequiredCommentMixin, CommentMixin, DeleteView):
-    model = Comment
-    template_name = 'blog/comment.html'
-    pk_url_kwarg = 'comment_id'
+    pass
 
 
 class CommentUpdateView(AuthorRequiredCommentMixin, CommentMixin, UpdateView):
-    model = Comment
-    form_class = CommentForm
-    pk_url_kwarg = 'comment_id'
-    template_name = 'blog/comment.html'
+    pass
 
 
 class CommentCreateView(CommentMixin, CreateView):
-    model = Comment
-    form_class = CommentForm
-    template_name = 'blog/comment.html'
 
     def form_valid(self, form):
         post = get_object_or_404(Post, id=self.kwargs['post_id'])
@@ -167,6 +140,8 @@ class CommentCreateView(CommentMixin, CreateView):
         form.instance.author = self.request.user
         return super().form_valid(form)
 
-    def get_success_url(self):
-        return reverse('blog:post_detail', kwargs={
-            'post_id': self.object.post.id})
+
+class RegistrationCreateView(CreateView):
+    template_name = 'registration/registration_form.html'
+    form_class = UserCreationForm
+    success_url = reverse_lazy('blog:index')

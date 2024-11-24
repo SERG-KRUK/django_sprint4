@@ -9,10 +9,10 @@ class CreatedAt(models.Model):
 
     class Meta:
         abstract = True
-        ordering = ['-created_at']
+        ordering = ['-created_at',]
 
 
-class IsPublished(CreatedAt):
+class IsPublishedCreatedAt(CreatedAt):
     is_published = models.BooleanField(
         'Опубликовано',
         default=True,

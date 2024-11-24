@@ -2,12 +2,12 @@ from django.db import models
 from django.contrib.auth import get_user_model
 
 from .constants import LENGHT_CHARACTER_FIELDS, LIMIT_OUTPUT_STRING
-from core.models import IsPublished, CreatedAt
+from core.models import IsPublishedCreatedAt, CreatedAt
 
 User = get_user_model()
 
 
-class Location(IsPublished):
+class Location(IsPublishedCreatedAt):
     name = models.CharField('Название места',
                             max_length=LENGHT_CHARACTER_FIELDS)
 
@@ -19,7 +19,7 @@ class Location(IsPublished):
         return self.name[:LIMIT_OUTPUT_STRING]
 
 
-class Category(IsPublished):
+class Category(IsPublishedCreatedAt):
     title = models.CharField('Заголовок', max_length=LENGHT_CHARACTER_FIELDS)
     description = models.TextField('Описание')
     slug = models.SlugField(
@@ -37,7 +37,7 @@ class Category(IsPublished):
         return self.title[:LIMIT_OUTPUT_STRING]
 
 
-class Post(IsPublished):
+class Post(IsPublishedCreatedAt):
     title = models.CharField('Заголовок', max_length=LENGHT_CHARACTER_FIELDS)
     text = models.TextField('Текст')
     pub_date = models.DateTimeField(
@@ -96,7 +96,6 @@ class Comment(CreatedAt):
     class Meta:
         verbose_name = 'комментарий'
         verbose_name_plural = 'Комментарии'
-        ordering = ['created_at']
 
     def __str__(self):
         return self.text[:LIMIT_OUTPUT_STRING]
