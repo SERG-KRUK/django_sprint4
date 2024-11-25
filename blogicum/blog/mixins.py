@@ -1,6 +1,5 @@
 from django.shortcuts import redirect
 from django.urls import reverse
-
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 
 from .models import Post, Comment
@@ -21,9 +20,7 @@ class PostMixin(AuthorRequiredCommentMixin, LoginRequiredMixin):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        post = self.get_object()
-        context['form'] = self.form_class(instance=post)
-        context['post'] = post
+        context['form'] = self.form_class(instance=self.get_object())
         return context
 
     def handle_no_permission(self):

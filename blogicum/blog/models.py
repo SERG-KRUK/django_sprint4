@@ -93,7 +93,7 @@ class Comment(CreatedAt):
         related_name='comments'
     )
 
-    class Meta:
+    class Meta(CreatedAt.Meta):
         verbose_name = 'комментарий'
         verbose_name_plural = 'Комментарии'
 

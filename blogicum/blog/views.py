@@ -1,9 +1,7 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.forms import UserCreationForm
-from django.db.models import Count
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse, reverse_lazy
-from django.utils import timezone
 from django.views.generic import (
     CreateView, DeleteView, DetailView, ListView, UpdateView
 )
@@ -20,8 +18,8 @@ from .mixins import (
 
 def profile(request, username):
     profile = get_object_or_404(User, username=username)
-    posts = profile.posts.order_by('-pub_date')
-    posts = annotate_posts_with_comment_count(posts)
+    posts = annotate_posts_with_comment_count(
+        profile.posts.order_by('-pub_date'))
     if request.user != profile:
         posts = filter_published_posts(posts)
     page_obj = get_paginated_posts(request, posts)
@@ -72,20 +70,16 @@ class CategoryListView(ListView):
     paginate_by = PAGINATE_COUNT
 
     def get_category(self):
-        return get_object_or_404(Category.objects.filter(
-            is_published=True),
-            slug=self.kwargs['category_slug']
-        )
+        return get_object_or_404(Category, is_published=True,
+                                 slug=self.kwargs['category_slug'])
 
     def get_queryset(self):
-        return Post.objects.filter(
-            category=self.get_category(),
-            is_published=True,
-            category__is_published=True,
-            pub_date__lte=timezone.now()
-        ).order_by('-pub_date').annotate(
-            comment_count=Count('comments')
-        )
+        category = self.get_category()
+        posts = category.posts.all()
+        posts = filter_published_posts(posts)
+        posts = annotate_posts_with_comment_count(posts)
+
+        return posts
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -117,11 +111,12 @@ class PostDetailView(LoginRequiredMixin, DetailView):
     def get_object(self):
 
         post = get_object_or_404(Post, id=self.kwargs['post_id'])
-        if self.request.user != post.author and not post.is_published:
-            return get_object_or_404(
-                Post.objects.filter(is_published=True),
-                id=self.kwargs['post_id'])
-        return post
+        if self.request.user == post.author:
+            return post
+        posts = Post.objects.all()
+        posts = filter_published_posts(posts)
+        posts = annotate_posts_with_comment_count(posts)
+        return get_object_or_404(posts, id=self.kwargs['post_id'])
 
 
 class CommentDeleteView(AuthorRequiredCommentMixin, CommentMixin, DeleteView):
