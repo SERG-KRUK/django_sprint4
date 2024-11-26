@@ -19,7 +19,7 @@ from .mixins import (
 def profile(request, username):
     profile = get_object_or_404(User, username=username)
     posts = annotate_posts_with_comment_count(
-        profile.posts.order_by('-pub_date'))
+        profile.posts)
     if request.user != profile:
         posts = filter_published_posts(posts)
     page_obj = get_paginated_posts(request, posts)
@@ -74,12 +74,8 @@ class CategoryListView(ListView):
                                  slug=self.kwargs['category_slug'])
 
     def get_queryset(self):
-        category = self.get_category()
-        posts = category.posts.all()
-        posts = filter_published_posts(posts)
-        posts = annotate_posts_with_comment_count(posts)
-
-        return posts
+        return annotate_posts_with_comment_count(
+            filter_published_posts(self.get_category().posts.all()))
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -113,10 +109,8 @@ class PostDetailView(LoginRequiredMixin, DetailView):
         post = get_object_or_404(Post, id=self.kwargs['post_id'])
         if self.request.user == post.author:
             return post
-        posts = Post.objects.all()
-        posts = filter_published_posts(posts)
-        posts = annotate_posts_with_comment_count(posts)
-        return get_object_or_404(posts, id=self.kwargs['post_id'])
+        return get_object_or_404(filter_published_posts(
+            Post.objects.all()), id=self.kwargs['post_id'])
 
 
 class CommentDeleteView(AuthorRequiredCommentMixin, CommentMixin, DeleteView):
