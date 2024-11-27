@@ -21,7 +21,7 @@ class PostForm(forms.ModelForm):
 
 class UserForm(forms.ModelForm):
     class Meta:
-        model = User  # Используем вашу собственную модель пользователя
+        model = User
         fields = ('username', 'email', 'last_name', 'first_name')
 
 

@@ -6,7 +6,12 @@ from .constants import LENGHT_CHARACTER_FIELDS, LIMIT_OUTPUT_STRING
 User = get_user_model()
 
 
-class CreatedAt(models.Model):
+class IsPublishedCreatedAt(models.Model):
+    is_published = models.BooleanField(
+        'Опубликовано',
+        default=True,
+        help_text='Снимите галочку, чтобы скрыть публикацию.'
+    )
     created_at = models.DateTimeField(
         'Добавлено',
         auto_now_add=True,
@@ -17,22 +22,11 @@ class CreatedAt(models.Model):
         ordering = ('created_at',)
 
 
-class IsPublishedCreatedAt(CreatedAt):
-    is_published = models.BooleanField(
-        'Опубликовано',
-        default=True,
-        help_text='Снимите галочку, чтобы скрыть публикацию.'
-    )
-
-    class Meta:
-        abstract = True
-
-
 class Location(IsPublishedCreatedAt):
     name = models.CharField('Название места',
                             max_length=LENGHT_CHARACTER_FIELDS)
 
-    class Meta:
+    class Meta(IsPublishedCreatedAt.Meta):
         verbose_name = 'местоположение'
         verbose_name_plural = 'Местоположения'
 
@@ -50,7 +44,7 @@ class Category(IsPublishedCreatedAt):
                   'разрешены символы латиницы, цифры, дефис и подчёркивание.'
     )
 
-    class Meta:
+    class Meta(IsPublishedCreatedAt.Meta):
         verbose_name = 'категория'
         verbose_name_plural = 'Категории'
 
@@ -98,7 +92,7 @@ class Post(IsPublishedCreatedAt):
         return self.title[:LIMIT_OUTPUT_STRING]
 
 
-class Comment(CreatedAt):
+class Comment(models.Model):
     text = models.TextField('Комментарий',
                             max_length=LENGHT_CHARACTER_FIELDS)
     author = models.ForeignKey(
@@ -113,8 +107,12 @@ class Comment(CreatedAt):
         verbose_name='Публикация',
         related_name='comments'
     )
+    created_at = models.DateTimeField(
+        'Добавлено',
+        auto_now_add=True,
+    )
 
-    class Meta(CreatedAt.Meta):
+    class Meta(IsPublishedCreatedAt.Meta):
         verbose_name = 'комментарий'
         verbose_name_plural = 'Комментарии'
 

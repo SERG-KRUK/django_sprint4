@@ -76,15 +76,15 @@ class CategoryListView(ListView):
             filter_published_posts(self.get_category().posts.all()))
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['category'] = self.get_category()
-        return context
+        return super().get_context_data(**kwargs) | {
+            'category': self.get_category()}
 
 
 class PostUpdateView(PostMixin, UpdateView):
 
     def get_success_url(self):
-        return reverse('blog:post_detail', args=[self.object.id])
+        return reverse('blog:post_detail', args=[self.kwargs[
+            self.pk_url_kwarg]])
 
 
 class PostDeleteView(PostMixin, DeleteView):
@@ -96,18 +96,19 @@ class PostDetailView(LoginRequiredMixin, DetailView):
     template_name = 'blog/detail.html'
     pk_url_kwarg = 'post_id'
 
+    def get_comments(self):
+        return self.object.comments.select_related('author')
+
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['form'] = CommentForm()
-        context['comments'] = self.object.comments.select_related('author')
-        return context
+        return super().get_context_data(**kwargs) | {
+            'form': CommentForm(), 'comments': self.get_comments()}
 
     def get_object(self):
         post = super().get_object()
         if self.request.user == post.author:
             return post
-        return get_object_or_404(filter_published_posts(
-            Post.objects.all()), id=post.id)
+        return super().get_object(filter_published_posts(
+            Post.objects.all()))
 
 
 class CommentDeleteView(AuthorRequiredCommentMixin, CommentMixin, DeleteView):
