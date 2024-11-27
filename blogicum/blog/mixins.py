@@ -19,16 +19,14 @@ class PostMixin(AuthorRequiredCommentMixin, LoginRequiredMixin):
     pk_url_kwarg = 'post_id'
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['form'] = self.form_class(instance=self.get_object())
-        return context
+        return super().get_context_data(form=self.form_class(
+            instance=self.get_object()), **kwargs)
 
     def handle_no_permission(self):
         return redirect('blog:post_detail', self.kwargs[self.pk_url_kwarg])
 
     def get_success_url(self):
-        return reverse('blog:profile', kwargs={
-            'username': self.request.user.username})
+        return reverse('blog:profile', args=[self.request.user.username])
 
 
 class CommentMixin(LoginRequiredMixin):
@@ -38,5 +36,4 @@ class CommentMixin(LoginRequiredMixin):
     pk_url_kwarg = 'comment_id'
 
     def get_success_url(self):
-        return reverse('blog:post_detail', kwargs={
-            'post_id': self.object.post.id})
+        return reverse('blog:post_detail', args=[self.object.post.id])

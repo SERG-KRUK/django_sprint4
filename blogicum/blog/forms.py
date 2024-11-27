@@ -1,8 +1,7 @@
 from django import forms
-from django.contrib.auth import get_user_model
 from django.utils import timezone
 
-from .models import Post, Comment
+from .models import Post, Comment, User
 
 
 class PostForm(forms.ModelForm):
@@ -21,9 +20,8 @@ class PostForm(forms.ModelForm):
 
 
 class UserForm(forms.ModelForm):
-
     class Meta:
-        model = get_user_model()
+        model = User  # Используем вашу собственную модель пользователя
         fields = ('username', 'email', 'last_name', 'first_name')
 
 

@@ -2,9 +2,30 @@ from django.db import models
 from django.contrib.auth import get_user_model
 
 from .constants import LENGHT_CHARACTER_FIELDS, LIMIT_OUTPUT_STRING
-from core.models import IsPublishedCreatedAt, CreatedAt
 
 User = get_user_model()
+
+
+class CreatedAt(models.Model):
+    created_at = models.DateTimeField(
+        'Добавлено',
+        auto_now_add=True,
+    )
+
+    class Meta:
+        abstract = True
+        ordering = ('created_at',)
+
+
+class IsPublishedCreatedAt(CreatedAt):
+    is_published = models.BooleanField(
+        'Опубликовано',
+        default=True,
+        help_text='Снимите галочку, чтобы скрыть публикацию.'
+    )
+
+    class Meta:
+        abstract = True
 
 
 class Location(IsPublishedCreatedAt):

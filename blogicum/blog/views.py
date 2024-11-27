@@ -17,14 +17,14 @@ from .mixins import (
 
 
 def profile(request, username):
-    profile = get_object_or_404(User, username=username)
+    author = get_object_or_404(User, username=username)
     posts = annotate_posts_with_comment_count(
-        profile.posts)
-    if request.user != profile:
+        author.posts)
+    if request.user != author:
         posts = filter_published_posts(posts)
     page_obj = get_paginated_posts(request, posts)
     return render(request, 'blog/profile.html',
-                  {'profile': profile, 'page_obj': page_obj})
+                  {'profile': author, 'page_obj': page_obj})
 
 
 class PostCreateView(LoginRequiredMixin, CreateView):
@@ -57,11 +57,9 @@ class PostListView(ListView):
     model = Post
     paginate_by = PAGINATE_COUNT
     template_name = 'blog/index.html'
-
-    def get_queryset(self):
-        filtered_posts = filter_published_posts(Post.objects)
-        annotated_posts = annotate_posts_with_comment_count(filtered_posts)
-        return annotated_posts
+    queryset = annotate_posts_with_comment_count(
+        filter_published_posts(Post.objects)
+    )
 
 
 class CategoryListView(ListView):
@@ -105,12 +103,11 @@ class PostDetailView(LoginRequiredMixin, DetailView):
         return context
 
     def get_object(self):
-
-        post = get_object_or_404(Post, id=self.kwargs['post_id'])
+        post = super().get_object()
         if self.request.user == post.author:
             return post
         return get_object_or_404(filter_published_posts(
-            Post.objects.all()), id=self.kwargs['post_id'])
+            Post.objects.all()), id=post.id)
 
 
 class CommentDeleteView(AuthorRequiredCommentMixin, CommentMixin, DeleteView):
